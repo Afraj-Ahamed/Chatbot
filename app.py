@@ -16,6 +16,10 @@ st.title("📄 RAG Chatbot - Ask Questions About Your PDF")
 if "processed" not in st.session_state:
     st.session_state.processed = False
 
+#Chat history init - this list stores all past Q&A pairs
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
 uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
 
 if uploaded_file is not None:
@@ -38,19 +42,45 @@ if uploaded_file is not None:
 
 if st.session_state.processed:
     st.divider()
-    query = st.text_input("Ask a question about the PDF:")
+
+     # Display all previous chat messages (chat history)
+    for chat in st.session_state.chat_history:
+        with st.chat_message("user"):
+            st.write(chat["question"])
+        with st.chat_message("assistant"):
+            st.write(chat["answer"])
+
+    # Chat input box (stays at the bottom, like a real chat app)
+    query = st.chat_input("Ask a question about the PDF...")
 
     if query:
-        with st.spinner("Searching document and generating answer..."):
-            relevant_chunks = search_relevant_chunks(query)
-            answer = generate_answer(query, relevant_chunks)
+         # Show the new question immediately
+        with st.chat_message("user"):
+            st.write(query)
 
-        st.markdown("### Answer")
-        st.write(answer)
+        with st.chat_message("assistant"):
+            with st.spinner("Searching document and generating answer..."):
+                relevant_chunks = search_relevant_chunks(query)
+                answer = generate_answer(query, relevant_chunks)
+            st.markdown("### Answer")
+            st.write(answer)
 
-        with st.expander("Show retrieved context (for debugging)"):
-            for i, chunk in enumerate(relevant_chunks, 1):
-                st.markdown(f"**Chunk {i}:**")
-                st.write(chunk)
+        
+            with st.expander("Show retrieved context (for debugging)"):
+                for i, chunk in enumerate(relevant_chunks, 1):
+                    st.markdown(f"**Chunk {i}:**")
+                    st.write(chunk)
+
+        # Save this Q&A pair into chat history
+        st.session_state.chat_history.append({
+            "question": query,
+            "answer": answer
+        })
+
+    # Button to clear chat history
+    if st.session_state.chat_history:
+        if st.button("🗑️ Clear Chat History"):
+            st.session_state.chat_history = []
+            st.rerun()
 else:
     st.info("Upload a PDF and click 'Process PDF' to get started.")
