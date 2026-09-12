@@ -1,0 +1,35 @@
+# 📄 RAG PDF Chatbot
+
+A beginner-friendly Retrieval-Augmented Generation (RAG) chatbot that answers questions based on information stored in a PDF document.
+
+## How it works
+
+PDF → Text Extraction → Text Chunking → Embeddings → ChromaDB → Similarity Search → Relevant Context → Gemini → Answer
+
+## Technologies used
+
+- Python
+- Streamlit
+- PyPDF
+- Sentence Transformers
+- ChromaDB
+- Gemini (gemini-3-flash-preview)
+- python-dotenv
+
+## Setup
+
+1. Clone this repo
+2. Create a virtual environment and activate it
+3. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+4. Create a `.env` file in the root folder:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   ```
+5. Run the app:
+   ```
+   streamlit run app.py
+   ```
+6. Upload a PDF, click "Process PDF", and start asking questions!
