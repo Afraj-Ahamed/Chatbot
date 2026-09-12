@@ -38,8 +38,10 @@ if uploaded_file is not None:
             store_chunks(chunks, embeddings)
 
             st.session_state.processed = True
+            # Clear old chat history when a new PDF is processed
+            st.session_state.chat_history = []
         st.success(f"PDF processed! Created {len(chunks)} chunks. You can ask questions now.")
-
+        
 if st.session_state.processed:
     st.divider()
 
