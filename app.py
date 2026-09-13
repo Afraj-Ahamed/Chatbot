@@ -9,54 +9,72 @@ from rag import (
     generate_answer
 )
 
-st.set_page_config(page_title="RAG PDF Chatbot", page_icon="📄")
-st.title("📄 RAG Chatbot - Ask Questions About Your PDF")
+st.set_page_config(page_title="RAG PDF Chatbot", page_icon="📄", layout="wide")
 
 # Session state init
 if "processed" not in st.session_state:
     st.session_state.processed = False
 
-#Chat history init - this list stores all past Q&A pairs
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
+if "pdf_name" not in st.session_state:
+    st.session_state.pdf_name = None
 
-if uploaded_file is not None:
-    if st.button("Process PDF"):
-        with st.spinner("Reading and processing PDF..."):
-            # Save uploaded file temporarily
-            os.makedirs("documents", exist_ok=True)
-            temp_path = os.path.join("documents", uploaded_file.name)
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_file.read())
-
-            # RAG pipeline: extract -> chunk -> embed -> store
-            text = extract_text_from_pdf(temp_path)
-            chunks = chunk_text(text)
-            embeddings = get_embeddings(chunks)
-            store_chunks(chunks, embeddings)
-
-            st.session_state.processed = True
-            # Clear old chat history when a new PDF is processed
-            st.session_state.chat_history = []
-        st.success(f"PDF processed! Created {len(chunks)} chunks. You can ask questions now.")
-        
-if st.session_state.processed:
+# ================= SIDEBAR =================
+with st.sidebar:
+    st.title("📄 RAG Chatbot")
+    st.markdown("Upload a PDF and ask questions about it.")
     st.divider()
 
-     # Display all previous chat messages (chat history)
+    st.subheader("Upload PDF")
+    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+
+    if uploaded_file is not None:
+        if st.button("Process PDF", use_container_width=True):
+            with st.spinner("Reading and processing PDF..."):
+                os.makedirs("documents", exist_ok=True)
+                temp_path = os.path.join("documents", uploaded_file.name)
+                with open(temp_path, "wb") as f:
+                    f.write(uploaded_file.read())
+
+                # RAG pipeline: extract -> chunk -> embed -> store
+                text = extract_text_from_pdf(temp_path)
+                chunks = chunk_text(text)
+                embeddings = get_embeddings(chunks)
+                store_chunks(chunks, embeddings)
+
+                st.session_state.processed = True
+                st.session_state.chat_history = []
+                st.session_state.pdf_name = uploaded_file.name
+            st.success(f"Processed! ({len(chunks)} chunks)")
+
+    if st.session_state.processed:
+        st.divider()
+        st.caption(f"📎 Active document: **{st.session_state.pdf_name}**")
+
+        if st.session_state.chat_history:
+            if st.button("🗑️ Clear Chat History", use_container_width=True):
+                st.session_state.chat_history = []
+                st.rerun()
+
+# ================= MAIN CHAT AREA =================
+st.title("💬 Chat")
+
+if not st.session_state.processed:
+    st.info("👈 Upload a PDF from the sidebar and click 'Process PDF' to get started.")
+else:
+    # Display all previous chat messages
     for chat in st.session_state.chat_history:
         with st.chat_message("user"):
             st.write(chat["question"])
         with st.chat_message("assistant"):
             st.write(chat["answer"])
 
-    # Chat input box (stays at the bottom, like a real chat app)
+    # Chat input box - clears automatically after each question
     query = st.chat_input("Ask a question about the PDF...")
 
     if query:
-         # Show the new question immediately
         with st.chat_message("user"):
             st.write(query)
 
@@ -64,25 +82,14 @@ if st.session_state.processed:
             with st.spinner("Searching document and generating answer..."):
                 relevant_chunks = search_relevant_chunks(query)
                 answer = generate_answer(query, relevant_chunks)
-            st.markdown("### Answer")
             st.write(answer)
 
-        
             with st.expander("Show retrieved context (for debugging)"):
                 for i, chunk in enumerate(relevant_chunks, 1):
                     st.markdown(f"**Chunk {i}:**")
                     st.write(chunk)
 
-        # Save this Q&A pair into chat history
         st.session_state.chat_history.append({
             "question": query,
             "answer": answer
         })
-
-    # Button to clear chat history
-    if st.session_state.chat_history:
-        if st.button("🗑️ Clear Chat History"):
-            st.session_state.chat_history = []
-            st.rerun()
-else:
-    st.info("Upload a PDF and click 'Process PDF' to get started.")
