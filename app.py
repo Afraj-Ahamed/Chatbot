@@ -11,6 +11,28 @@ from rag import (
 
 st.set_page_config(page_title="RAG PDF Chatbot", page_icon="📄", layout="wide")
 
+# ---- CSS: aligns the user's messages to the right, assistant's to the left ----
+st.markdown("""
+<style>
+div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+    flex-direction: row-reverse;
+    text-align: right;
+}
+div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
+    background-color: #2b6cb0;
+    border-radius: 15px;
+    padding: 10px 15px;
+    display: inline-block;
+}
+div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
+    background-color: #333844;
+    border-radius: 15px;
+    padding: 10px 15px;
+    display: inline-block;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Session state init
 if "processed" not in st.session_state:
     st.session_state.processed = False
