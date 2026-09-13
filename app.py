@@ -43,59 +43,53 @@ if "chat_history" not in st.session_state:
 if "pdf_name" not in st.session_state:
     st.session_state.pdf_name = None
 
-# ================= SIDEBAR (LEFT SIDE) =================
+# ================= SIDEBAR (LEFT SIDE) - ONLY Past Questions =================
 with st.sidebar:
-    st.title("📄 RAG Chatbot")
-    st.markdown("Upload a PDF and ask questions about it.")
+    st.subheader("📝 Past Questions")
+    if st.session_state.chat_history:
+        for chat in reversed(st.session_state.chat_history):
+            short_question = chat["question"]
+            if len(short_question) > 35:
+                short_question = short_question[:35] + "..."
+            st.caption(f"• {short_question}")
+    else:
+        st.caption("No questions asked yet.")
+
+# ================= MAIN AREA (RIGHT SIDE) =================
+st.title("📄 RAG Chatbot - Ask Questions About Your PDF")
+
+uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
+
+if uploaded_file is not None:
+    if st.button("Process PDF"):
+        with st.spinner("Reading and processing PDF..."):
+            os.makedirs("documents", exist_ok=True)
+            temp_path = os.path.join("documents", uploaded_file.name)
+            with open(temp_path, "wb") as f:
+                f.write(uploaded_file.read())
+
+            # RAG pipeline: extract -> chunk -> embed -> store
+            text = extract_text_from_pdf(temp_path)
+            chunks = chunk_text(text)
+            embeddings = get_embeddings(chunks)
+            store_chunks(chunks, embeddings)
+
+            st.session_state.processed = True
+            st.session_state.chat_history = []
+            st.session_state.pdf_name = uploaded_file.name
+        st.success(f"PDF processed! Created {len(chunks)} chunks. You can ask questions now.")
+
+if st.session_state.processed:
+    st.caption(f"📎 Active document: **{st.session_state.pdf_name}**")
+
+    if st.session_state.chat_history:
+        if st.button("🗑️ Clear Chat History"):
+            st.session_state.chat_history = []
+            st.rerun()
+
     st.divider()
 
-    st.subheader("Upload PDF")
-    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
-
-    if uploaded_file is not None:
-        if st.button("Process PDF", use_container_width=True):
-            with st.spinner("Reading and processing PDF..."):
-                os.makedirs("documents", exist_ok=True)
-                temp_path = os.path.join("documents", uploaded_file.name)
-                with open(temp_path, "wb") as f:
-                    f.write(uploaded_file.read())
-
-                # RAG pipeline: extract -> chunk -> embed -> store
-                text = extract_text_from_pdf(temp_path)
-                chunks = chunk_text(text)
-                embeddings = get_embeddings(chunks)
-                store_chunks(chunks, embeddings)
-
-                st.session_state.processed = True
-                st.session_state.chat_history = []
-                st.session_state.pdf_name = uploaded_file.name
-            st.success(f"Processed! ({len(chunks)} chunks)")
-
-    if st.session_state.processed:
-        st.divider()
-        st.caption(f"📎 Active document: **{st.session_state.pdf_name}**")
-
-        if st.session_state.chat_history:
-            if st.button("🗑️ Clear Chat History", use_container_width=True):
-                st.session_state.chat_history = []
-                st.rerun()
-
-            # ---- Past Questions List (like Claude's sidebar chat list) ----
-            st.divider()
-            st.subheader("📝 Past Questions")
-            for chat in reversed(st.session_state.chat_history):
-                short_question = chat["question"]
-                if len(short_question) > 35:
-                    short_question = short_question[:35] + "..."
-                st.caption(f"• {short_question}")
-
-# ================= MAIN CHAT AREA (RIGHT SIDE) =================
-st.title("💬 Chat")
-
-if not st.session_state.processed:
-    st.info("👈 Upload a PDF from the sidebar and click 'Process PDF' to get started.")
-else:
-    # Display all previous chat messages as bubbles
+    # Display all previous chat messages
     for chat in st.session_state.chat_history:
         with st.chat_message("user"):
             st.write(chat["question"])
@@ -125,3 +119,5 @@ else:
             "answer": answer
         })
         st.rerun()
+else:
+    st.info("Upload a PDF and click 'Process PDF' to get started.")
