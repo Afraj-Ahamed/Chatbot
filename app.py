@@ -80,6 +80,15 @@ with st.sidebar:
                 st.session_state.chat_history = []
                 st.rerun()
 
+            # ---- Chat History List (like Claude's sidebar) ----
+            st.divider()
+            st.subheader("📝 Chat History")
+            for i, chat in enumerate(reversed(st.session_state.chat_history)):
+                short_question = chat["question"]
+                if len(short_question) > 40:
+                    short_question = short_question[:40] + "..."
+                st.caption(f"• {short_question}")
+
 # ================= MAIN CHAT AREA =================
 st.title("💬 Chat")
 
@@ -115,3 +124,4 @@ else:
             "question": query,
             "answer": answer
         })
+        st.rerun()
