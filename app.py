@@ -43,7 +43,7 @@ if "chat_history" not in st.session_state:
 if "pdf_name" not in st.session_state:
     st.session_state.pdf_name = None
 
-# ================= SIDEBAR =================
+# ================= SIDEBAR (LEFT SIDE) =================
 with st.sidebar:
     st.title("📄 RAG Chatbot")
     st.markdown("Upload a PDF and ask questions about it.")
@@ -80,22 +80,22 @@ with st.sidebar:
                 st.session_state.chat_history = []
                 st.rerun()
 
-            # ---- Chat History List (like Claude's sidebar) ----
+            # ---- Past Questions List (like Claude's sidebar chat list) ----
             st.divider()
-            st.subheader("📝 Chat History")
-            for i, chat in enumerate(reversed(st.session_state.chat_history)):
+            st.subheader("📝 Past Questions")
+            for chat in reversed(st.session_state.chat_history):
                 short_question = chat["question"]
-                if len(short_question) > 40:
-                    short_question = short_question[:40] + "..."
+                if len(short_question) > 35:
+                    short_question = short_question[:35] + "..."
                 st.caption(f"• {short_question}")
 
-# ================= MAIN CHAT AREA =================
+# ================= MAIN CHAT AREA (RIGHT SIDE) =================
 st.title("💬 Chat")
 
 if not st.session_state.processed:
     st.info("👈 Upload a PDF from the sidebar and click 'Process PDF' to get started.")
 else:
-    # Display all previous chat messages
+    # Display all previous chat messages as bubbles
     for chat in st.session_state.chat_history:
         with st.chat_message("user"):
             st.write(chat["question"])
